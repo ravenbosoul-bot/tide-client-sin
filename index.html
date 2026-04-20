@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tide Client — The performance Minecraft client</title>
+<meta name="description" content="Tide Client is a lightweight, modern Fabric-based Minecraft client. Zero-config mod profiles, 1-click Modrinth installs, FPS-first defaults." />
+<meta property="og:title" content="Tide Client" />
+<meta property="og:description" content="The performance Minecraft client. Fabric-based, beautifully simple." />
+<meta property="og:type" content="website" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%236FD5FF'/%3E%3Cstop offset='1' stop-color='%231E5EFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M4 38c6 0 6-6 12-6s6 6 12 6 6-6 12-6 6 6 12 6 6-6 12-6v22H4z'/%3E%3Ccircle cx='22' cy='22' r='4' fill='%236FD5FF'/%3E%3C/svg%3E" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:        '#05080E',
+          surface:   '#0B1119',
+          surface2:  '#111826',
+          border:    '#1C2434',
+          text:      '#D7E2F2',
+          muted:     '#7A879C',
+          brand:     '#3BB5FF',
+          brandDeep: '#1E5EFF',
+          accent:    '#6FD5FF',
+        },
+        fontFamily: {
+          sans: ['"Space Grotesk"', 'Inter', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        },
+        boxShadow: {
+          glow: '0 0 40px rgba(59,181,255,0.25)',
+          card: '0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 40px rgba(0,0,0,0.55)',
+        },
+      }
+    }
+  }
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #05080E; color: #D7E2F2; font-family: 'Space Grotesk', sans-serif; }
+
+  /* Ocean canvas lives behind the hero */
+  #ocean { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* Gradient wordmark with per-char animation. `inline-flex` + wrap:nowrap guarantees the
+     whole word stays on one line and never gets a letter clipped by the viewport, even on
+     narrow phones. Font size clamps aggressively against vw so the word shrinks with the
+     screen instead of overflowing. Padding on the container gives letter-spacing room to
+     breathe so the leading "T" can never touch the edge. */
+  .wordmark {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    color: transparent;
+    padding: 0 0.15em;
+    max-width: 100%;
+  }
+  .wordmark span {
+    display: inline-block;
+    background: linear-gradient(180deg, #EAF6FF 0%, #6FD5FF 50%, #1E5EFF 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: bob 3.6s ease-in-out infinite, hue 8s linear infinite;
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes hue {
+    0%   { filter: hue-rotate(0deg)   drop-shadow(0 0 0 rgba(59,181,255,0)); }
+    50%  { filter: hue-rotate(-18deg) drop-shadow(0 0 14px rgba(111,213,255,0.55)); }
+    100% { filter: hue-rotate(0deg)   drop-shadow(0 0 0 rgba(59,181,255,0)); }
+  }
+
+  .grid-texture {
+    background-image:
+      linear-gradient(rgba(59,181,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,181,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .feather-hover { transition: transform .25s ease, border-color .25s ease, background .25s ease; }
+  .feather-hover:hover { transform: translateY(-2px); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-weight: 600; border-radius: 0.75rem; transition: all .2s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, #3BB5FF, #1E5EFF);
+    color: white; padding: 0.85rem 1.6rem;
+    box-shadow: 0 8px 30px rgba(30,94,255,0.45), 0 0 0 1px rgba(111,213,255,0.35) inset;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 36px rgba(30,94,255,0.6), 0 0 0 1px rgba(111,213,255,0.55) inset; }
+  .btn-ghost {
+    color: #D7E2F2; padding: 0.85rem 1.6rem; border: 1px solid #1C2434; background: rgba(17,24,38,0.5);
+  }
+  .btn-ghost:hover { border-color: #3BB5FF; color: white; }
+
+  .chip { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .65rem; border-radius: 999px; font-size: .75rem;
+          background: rgba(59,181,255,0.1); color: #6FD5FF; border: 1px solid rgba(59,181,255,0.25); }
+
+  /* Reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body class="antialiased overflow-x-hidden">
+
+<!-- ===== NAV ===== -->
+<header class="fixed top-0 inset-x-0 z-40 backdrop-blur-xl bg-bg/60 border-b border-border/60">
+  <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-lg flex items-center justify-center"
+            style="background: linear-gradient(180deg,#6FD5FF,#1E5EFF); box-shadow: 0 0 20px rgba(59,181,255,.5)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>
+      </span>
+      <span class="font-bold tracking-wide text-white">Tide Client</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8 text-sm text-muted">
+      <a href="#features" class="hover:text-white transition">Features</a>
+      <a href="#mods" class="hover:text-white transition">Mods</a>
+      <a href="#performance" class="hover:text-white transition">Performance</a>
+      <a href="#download" class="hover:text-white transition">Download</a>
+    </nav>
+    <a href="#download" class="btn btn-primary text-sm !py-2 !px-4">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+  <canvas id="ocean"></canvas>
+  <div class="absolute inset-0 grid-texture opacity-40 pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-bg/20 via-transparent to-bg pointer-events-none"></div>
+
+  <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
+    <div class="chip mb-8 animate-pulse"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span> v0.1 · Fabric 1.21.10 &amp; 1.21.11</div>
+
+    <h1 class="wordmark uppercase font-extrabold leading-none drop-shadow-[0_0_24px_rgba(59,181,255,0.4)]"
+        style="font-size: clamp(2rem, 11vw, 7rem); letter-spacing: clamp(0.02em, 0.9vw, 0.14em);">
+      <span style="animation-delay:.00s">T</span><span style="animation-delay:.09s">I</span><span style="animation-delay:.18s">D</span><span style="animation-delay:.27s">E</span><span style="animation-delay:.36s">&nbsp;</span><span style="animation-delay:.45s">C</span><span style="animation-delay:.54s">L</span><span style="animation-delay:.63s">I</span><span style="animation-delay:.72s">E</span><span style="animation-delay:.81s">N</span><span style="animation-delay:.90s">T</span>
+    </h1>
+
+    <p class="mt-8 text-xl md:text-2xl text-muted max-w-2xl mx-auto leading-relaxed">
+      The Minecraft client that <span class="text-white font-semibold">just works</span>.
+      Fabric-based, FPS-first, with a launcher so clean you'll wonder why everyone else's look like 2014.
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+      <a href="#download" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows
+      </a>
+      <a href="#features" class="btn btn-ghost">
+        See what's inside
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </a>
+    </div>
+
+    <div class="mt-16 flex items-center justify-center gap-8 text-xs text-muted">
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Free &amp; open source</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span> No bloat</div>
+      <div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent"></span> Auto-updating</div>
+    </div>
+  </div>
+
+  <a href="#features" class="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted hover:text-white transition animate-bounce">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </a>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section id="features" class="relative py-32 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16 reveal">
+      <div class="chip mb-4">Features</div>
+      <h2 class="text-4xl md:text-5xl font-bold text-white">Everything you want, nothing you don't.</h2>
+      <p class="mt-4 text-muted max-w-2xl mx-auto">Built on Fabric. Shipped with Sodium. Managed by a launcher that respects your time.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5">
+      <!-- Card -->
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(59,181,255,0.12); border: 1px solid rgba(59,181,255,0.3)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3BB5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">FPS-first defaults</h3>
+        <p class="text-sm text-muted leading-relaxed">Sodium, Lithium, FerriteCore, EntityCulling, Dynamic FPS, ModernFix — all auto-fetched from Modrinth for your exact MC version. No manual jar-hunting.</p>
+      </div>
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(111,213,255,0.12); border: 1px solid rgba(111,213,255,0.3)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">1-click Modrinth</h3>
+        <p class="text-sm text-muted leading-relaxed">Search Modrinth from inside the launcher. One click installs the correct Fabric build into your active profile. No browser, no downloads folder.</p>
+      </div>
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(30,94,255,0.15); border: 1px solid rgba(30,94,255,0.35)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Per-version profiles</h3>
+        <p class="text-sm text-muted leading-relaxed">Swap between 1.21.10 and 1.21.11 and your mods swap with you. No more "incompatible mod" crashes from stale jars.</p>
+      </div>
+
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(59,181,255,0.12); border: 1px solid rgba(59,181,255,0.3)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3BB5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Built-in modules</h3>
+        <p class="text-sm text-muted leading-relaxed">FPS HUD, CPS, Keystrokes, Zoom, FreeCam, FullBright, Coordinates, Custom Crosshair — all toggle-able in-game. No external resource packs needed.</p>
+      </div>
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(111,213,255,0.12); border: 1px solid rgba(111,213,255,0.3)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Microsoft auth</h3>
+        <p class="text-sm text-muted leading-relaxed">Sign in with your Mojang/Microsoft account via the official device-code flow. Offline mode available for single-player.</p>
+      </div>
+      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(30,94,255,0.15); border: 1px solid rgba(30,94,255,0.35)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">Open source</h3>
+        <p class="text-sm text-muted leading-relaxed">Launcher in Rust + Tauri, mod in Java + Fabric. Audit every line. Fork it. Build your own. MIT licensed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MODS / MODULES ===== -->
+<section id="mods" class="relative py-32 px-6 border-t border-border">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16 reveal">
+      <div class="chip mb-4">In-game modules</div>
+      <h2 class="text-4xl md:text-5xl font-bold text-white">18 modules. Zero config required.</h2>
+      <p class="mt-4 text-muted max-w-2xl mx-auto">Everything toggles from the in-game click-GUI. Settings persist per-version.</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 reveal">
+      <!-- Module chips -->
+      <!-- prettier-ignore -->
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+        <div class="text-xs font-semibold text-white">FPS</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74"/><path d="M11 20v-4"/><path d="M21 12v4a8 8 0 0 1-16 0v-4"/><path d="M3 12h18"/></svg></div>
+        <div class="text-xs font-semibold text-white">CPS</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg></div>
+        <div class="text-xs font-semibold text-white">Keystrokes</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="text-xs font-semibold text-white">Coords</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="text-xs font-semibold text-white">Zoom</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+        <div class="text-xs font-semibold text-white">FullBright</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="text-xs font-semibold text-white">FreeCam</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="text-xs font-semibold text-white">Armor HUD</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg></div>
+        <div class="text-xs font-semibold text-white">Crosshair</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="text-xs font-semibold text-white">FreeLook</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="text-xs font-semibold text-white">Auto Sprint</div>
+      </div>
+      <div class="p-4 rounded-xl border border-border bg-surface hover:border-brand/50 transition text-center">
+        <div class="text-accent mb-1.5"><svg width="18" height="18" class="inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="text-xs font-semibold text-white">Clock</div>
+      </div>
+    </div>
+
+    <div class="text-center mt-8 text-xs text-muted">+ 6 more · Toggle Sneak · Toggle Sprint · Hitboxes · Block Info · Ping · Potion Effects</div>
+  </div>
+</section>
+
+<!-- ===== PERFORMANCE ===== -->
+<section id="performance" class="relative py-32 px-6 border-t border-border overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 50% 0%, rgba(30,94,255,0.15), transparent 60%);"></div>
+  <div class="max-w-6xl mx-auto relative">
+    <div class="grid md:grid-cols-2 gap-16 items-center">
+      <div class="reveal">
+        <div class="chip mb-4">Performance</div>
+        <h2 class="text-4xl md:text-5xl font-bold text-white leading-tight">More FPS.<br/><span class="bg-gradient-to-br from-accent to-brandDeep bg-clip-text text-transparent">Less hassle.</span></h2>
+        <p class="mt-6 text-muted leading-relaxed text-lg">
+          Tide bundles the best-in-class Fabric performance mods and keeps them updated.
+          You stop editing <span class="font-mono text-white">mods/</span> folders.
+          You start enjoying 400 FPS.
+        </p>
+        <ul class="mt-8 space-y-3 text-sm">
+          <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>Sodium — next-gen renderer</li>
+          <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>Lithium — server-side tick optimizations</li>
+          <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>FerriteCore — lower memory usage</li>
+          <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>EntityCulling — skip hidden mob rendering</li>
+          <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>Dynamic FPS · ModernFix · ImmediatelyFast</li>
+        </ul>
+      </div>
+
+      <div class="reveal">
+        <div class="relative rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 rounded-full bg-red-400/70"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-400/70"></span>
+            <span class="w-3 h-3 rounded-full bg-green-400/70"></span>
+            <span class="ml-3 text-xs font-mono text-muted">Tide Client — FPS benchmark</span>
+          </div>
+          <div class="space-y-5">
+            <div>
+              <div class="flex justify-between text-xs text-muted mb-2"><span>Vanilla MC</span><span class="font-mono">~120 FPS</span></div>
+              <div class="h-2 rounded-full bg-surface2 overflow-hidden"><div class="h-full bg-muted/60" style="width: 30%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-muted mb-2"><span>Sodium only</span><span class="font-mono">~280 FPS</span></div>
+              <div class="h-2 rounded-full bg-surface2 overflow-hidden"><div class="h-full bg-brand/60" style="width: 70%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-white mb-2"><span class="font-semibold">Tide full stack</span><span class="font-mono text-accent">~420 FPS</span></div>
+              <div class="h-2 rounded-full bg-surface2 overflow-hidden"><div class="h-full" style="width: 100%; background: linear-gradient(90deg,#3BB5FF,#6FD5FF)"></div></div>
+            </div>
+          </div>
+          <div class="mt-6 text-2xs text-muted leading-relaxed">
+            Benchmark: MC 1.21.11, 16 render distance, AMD RX 6500 XT, 4 GB allocated. Your mileage will vary, but the direction of travel is always up.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DOWNLOAD ===== -->
+<section id="download" class="relative py-32 px-6 border-t border-border">
+  <div class="max-w-3xl mx-auto text-center reveal">
+    <div class="chip mb-4">Download</div>
+    <h2 class="text-4xl md:text-5xl font-bold text-white">Ready in 60 seconds.</h2>
+    <p class="mt-4 text-muted">Download the installer, sign in, click Play. That's it.</p>
+
+    <div class="mt-10 p-8 rounded-2xl border border-border bg-surface shadow-card">
+      <div class="flex items-center justify-center gap-3 mb-5">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        <span class="text-lg font-semibold text-white">Windows 10 / 11 · 64-bit</span>
+      </div>
+      <!-- TODO: replace <YOUR-USERNAME>/<REPO> with your real GitHub path. The `/releases/latest/`
+           alias auto-redirects to whatever the newest release is, so you never have to edit this
+           file again when you ship an update — just upload a new .exe to a new GitHub Release. -->
+      <a href="https://github.com/ravenbosoul-bot/tide-client-sin/releases/latest/download/TideClient-Setup.exe"
+         class="btn btn-primary text-base !py-4 !px-8 w-full sm:w-auto">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download TideClient-Setup.exe
+      </a>
+      <div class="mt-5 flex items-center justify-center gap-6 text-xs text-muted">
+        <span class="font-mono">~ 4 MB</span>
+        <span>·</span>
+        <span>Java 21 bundled-detected</span>
+        <span>·</span>
+        <span>Auto-updates</span>
+      </div>
+    </div>
+
+    <p class="mt-8 text-xs text-muted">
+      macOS &amp; Linux builds coming soon. Requires a valid Minecraft: Java Edition license.
+    </p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="border-t border-border py-12 px-6">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-muted">
+    <div class="flex items-center gap-2.5">
+      <span class="w-6 h-6 rounded-md flex items-center justify-center" style="background: linear-gradient(180deg,#6FD5FF,#1E5EFF)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>
+      </span>
+      <span class="text-white font-semibold">Tide Client</span>
+      <span class="text-muted/60">· v0.1</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="#features" class="hover:text-white transition">Features</a>
+      <a href="#download" class="hover:text-white transition">Download</a>
+      <a href="https://github.com/ravenbosoul-bot/tide-client-sin" class="hover:text-white transition">GitHub</a>
+      <a href="#" class="hover:text-white transition">Discord</a>
+    </div>
+    <div class="text-xs">
+      Not affiliated with Mojang or Microsoft. Minecraft™ is a trademark of Mojang Synergies AB.
+    </div>
+  </div>
+</footer>
+
+<script>
+// ===== Ocean wave canvas (mirrors the launcher's AnimatedBackground vibe) =====
+(() => {
+  const c = document.getElementById('ocean');
+  const ctx = c.getContext('2d');
+  let w = 0, h = 0, stars = [];
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = c.clientWidth; h = c.clientHeight;
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = Array.from({length: 140}, () => ({
+      x: Math.random() * w, y: Math.random() * h * 0.6,
+      r: Math.random() * 1.2 + 0.3,
+      t: Math.random() * Math.PI * 2,
+      s: Math.random() * 0.6 + 0.4,
+    }));
+  }
+  window.addEventListener('resize', resize); resize();
+
+  function wave(y, t, amp, freq, speed, phase, color) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= w; x += 3) {
+      const yy = y + Math.sin(x * freq + t * speed + phase) * amp
+                   + Math.sin(x * freq * 0.5 + t * speed * 0.7) * amp * 0.5;
+      ctx.lineTo(x, yy);
+    }
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+  }
+
+  function frame(ts) {
+    const t = ts * 0.001;
+    // Gradient backdrop
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#05080E');
+    g.addColorStop(0.55, '#081222');
+    g.addColorStop(1, '#0A1930');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+
+    // Stars
+    for (const s of stars) {
+      s.t += 0.02 * s.s;
+      const a = (Math.sin(s.t) + 1) * 0.4 + 0.1;
+      ctx.fillStyle = `rgba(159,216,255,${a.toFixed(3)})`;
+      ctx.fillRect(s.x, s.y, s.r * 1.4, s.r * 1.4);
+    }
+
+    // Two waves
+    wave(h * 0.58, t, 12, 0.012, 1.2, 0, 'rgba(59,181,255,0.18)');
+    wave(h * 0.72, t, 16, 0.009, 0.9, 1.3, 'rgba(30,94,255,0.28)');
+    wave(h * 0.88, t, 22, 0.007, 0.6, 2.4, 'rgba(10,30,70,0.6)');
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// ===== Scroll reveal =====
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+</script>
+
+</body>
+</html>
