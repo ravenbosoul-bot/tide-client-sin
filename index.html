@@ -193,12 +193,13 @@
         <h3 class="text-lg font-semibold text-white mb-2">FPS-first defaults</h3>
         <p class="text-sm text-muted leading-relaxed">Sodium, Lithium, FerriteCore, EntityCulling, Dynamic FPS, ModernFix — all auto-fetched from Modrinth for your exact MC version. No manual jar-hunting.</p>
       </div>
-      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
-        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(111,213,255,0.12); border: 1px solid rgba(111,213,255,0.3)">
+      <div class="feather-hover relative p-7 rounded-2xl border reveal overflow-hidden" style="border-color: rgba(59,181,255,0.5); background: linear-gradient(180deg, rgba(59,181,255,0.08), rgba(30,94,255,0.05)); box-shadow: 0 0 40px rgba(59,181,255,0.08)">
+        <div class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase" style="background: linear-gradient(90deg,#3BB5FF,#6FD5FF); color: #05080E">Flagship</div>
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(111,213,255,0.18); border: 1px solid rgba(111,213,255,0.4)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FD5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
-        <h3 class="text-lg font-semibold text-white mb-2">1-click Modrinth</h3>
-        <p class="text-sm text-muted leading-relaxed">Search Modrinth from inside the launcher. One click installs the correct Fabric build into your active profile. No browser, no downloads folder.</p>
+        <h3 class="text-lg font-semibold text-white mb-2">1-click Modrinth <span class="text-accent">— built in</span></h3>
+        <p class="text-sm text-muted leading-relaxed">Type a mod name. Click install. Done. The launcher talks to Modrinth directly, picks the correct Fabric build for your exact MC version, and drops it into your active profile. <span class="text-white font-medium">No browser. No downloads folder. No version guessing.</span></p>
       </div>
       <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(30,94,255,0.15); border: 1px solid rgba(30,94,255,0.35)">
@@ -208,12 +209,13 @@
         <p class="text-sm text-muted leading-relaxed">Swap between 1.21.10 and 1.21.11 and your mods swap with you. No more "incompatible mod" crashes from stale jars.</p>
       </div>
 
-      <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
-        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(59,181,255,0.12); border: 1px solid rgba(59,181,255,0.3)">
+      <div class="feather-hover relative p-7 rounded-2xl border reveal overflow-hidden" style="border-color: rgba(59,181,255,0.5); background: linear-gradient(180deg, rgba(59,181,255,0.08), rgba(30,94,255,0.05)); box-shadow: 0 0 40px rgba(59,181,255,0.08)">
+        <div class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase" style="background: linear-gradient(90deg,#3BB5FF,#6FD5FF); color: #05080E">Flagship</div>
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(59,181,255,0.18); border: 1px solid rgba(59,181,255,0.4)">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3BB5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         </div>
-        <h3 class="text-lg font-semibold text-white mb-2">Built-in modules</h3>
-        <p class="text-sm text-muted leading-relaxed">FPS HUD, CPS, Keystrokes, Zoom, FreeCam, FullBright, Coordinates, Custom Crosshair — all toggle-able in-game. No external resource packs needed.</p>
+        <h3 class="text-lg font-semibold text-white mb-2">18 built-in modules <span class="text-accent">— no resource packs</span></h3>
+        <p class="text-sm text-muted leading-relaxed">FPS HUD, CPS, Keystrokes, Zoom, FreeCam, FullBright, Coordinates, Custom Crosshair, Armor HUD, FreeLook, Hitboxes and more — all toggleable from an in-game click-GUI. <span class="text-white font-medium">Settings persist per-version, nothing auto-enables itself.</span></p>
       </div>
       <div class="feather-hover p-7 rounded-2xl border border-border bg-surface reveal">
         <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style="background: rgba(111,213,255,0.12); border: 1px solid rgba(111,213,255,0.3)">
@@ -367,7 +369,7 @@
       <!-- TODO: replace <YOUR-USERNAME>/<REPO> with your real GitHub path. The `/releases/latest/`
            alias auto-redirects to whatever the newest release is, so you never have to edit this
            file again when you ship an update — just upload a new .exe to a new GitHub Release. -->
-      <a href="https://github.com/ravenbosoul-bot/tide-client-sin/releases/download/V0.1.0/Tide.Client_0.1.0_x64-setup.exe"
+      <a href="https://github.com/ravenbosoul-bot/tide-client-sin/releases/latest/download/TideClient-Setup.exe"
          class="btn btn-primary text-base !py-4 !px-8 w-full sm:w-auto">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download for Windows
@@ -387,6 +389,33 @@
   </div>
 </section>
 
+<!-- ===== SUPPORT / KO-FI ===== -->
+<section id="support" class="relative py-28 px-6 border-t border-border overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 50% 50%, rgba(255,94,91,0.10), transparent 65%);"></div>
+  <div class="max-w-3xl mx-auto relative text-center reveal">
+    <div class="chip mb-4" style="border-color: rgba(255,94,91,0.4); color:#FF9B99"><span class="w-1.5 h-1.5 rounded-full" style="background:#FF5E5B"></span> Made by one person</div>
+    <h2 class="text-4xl md:text-5xl font-bold text-white leading-tight">Hey — I'm a <span class="bg-gradient-to-br from-[#FF5E5B] to-[#E03C3C] bg-clip-text text-transparent">solo developer</span>.</h2>
+    <p class="mt-6 text-muted leading-relaxed text-lg">
+      Tide Client is built, designed, and maintained by <span class="text-white font-semibold">just me</span>.
+      The launcher, the mod, the animations, the website — all of it.
+      I'm going to keep shipping updates, new modules, and bug fixes for as long as you keep using it.
+    </p>
+    <p class="mt-4 text-muted leading-relaxed">
+      If Tide saved you time or made your game better, a small tip on Ko-fi genuinely helps keep this project alive.
+      <span class="text-white">No pressure. Anything at all means a lot.</span>
+    </p>
+    <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <a href="https://ko-fi.com/s1ndev" target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 px-7 py-4 rounded-xl font-semibold text-white transition hover:scale-[1.02]"
+         style="background: linear-gradient(180deg, #FF5E5B 0%, #E03C3C 100%); box-shadow: 0 10px 30px rgba(255,94,91,0.35)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z"/></svg>
+        Support on Ko-fi
+      </a>
+      <a href="https://ko-fi.com/s1ndev" target="_blank" rel="noopener noreferrer" class="text-sm text-muted hover:text-white transition font-mono">ko-fi.com/s1ndev &rarr;</a>
+    </div>
+  </div>
+</section>
+
 <!-- ===== FOOTER ===== -->
 <footer class="border-t border-border py-12 px-6">
   <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-muted">
@@ -401,6 +430,7 @@
       <a href="#features" class="hover:text-white transition">Features</a>
       <a href="#download" class="hover:text-white transition">Download</a>
       <a href="https://github.com/ravenbosoul-bot/tide-client-sin" class="hover:text-white transition">GitHub</a>
+      <a href="https://ko-fi.com/s1ndev" target="_blank" rel="noopener noreferrer" class="hover:text-[#FF5E5B] transition">♥ Ko-fi</a>
       <a href="#" class="hover:text-white transition">Discord</a>
     </div>
     <div class="text-xs">
